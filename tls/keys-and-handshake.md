@@ -50,21 +50,34 @@ Once both sides have the shared secret from the key exchange, TLS derives a
 tree of symmetric keys using HKDF (HMAC-based Key Derivation Function). None of
 these are sent over the wire — both sides compute them independently.
 
+**Why both sides get the same keys:** HKDF is deterministic — same inputs always
+produce the same output. Both sides feed in identical inputs:
+1. **Shared secret** — Diffie-Hellman (or ML-KEM) math guarantees both sides
+   compute the same value from the key exchange
+2. **Handshake transcript hash** — both sides saw the same ClientHello and
+   ServerHello messages, so the hash matches
+3. **Fixed labels** — hardcoded strings defined in the TLS 1.3 spec (RFC 8446),
+   like `"c hs traffic"` and `"s hs traffic"`
+
+If any input differs (e.g., a MITM altered a message), the derived keys won't
+match and the Finished MAC verification (Steps 7 and 9 of the handshake) will
+fail, aborting the connection.
+
 ```
-Shared Secret (from key exchange)
+Shared Secret (identical on both sides)
     │
     ▼
 Early Secret ──────► (used for 0-RTT data, if applicable)
     │
     ▼
-Handshake Secret
-    ├──► Client Handshake Traffic Key  ── encrypts client handshake messages
-    ├──► Server Handshake Traffic Key  ── encrypts server handshake messages
+Handshake Secret + transcript hash
+    ├──► "c hs traffic" ──► Client Handshake Traffic Key  ── encrypts client handshake messages
+    ├──► "s hs traffic" ──► Server Handshake Traffic Key  ── encrypts server handshake messages
     │
     ▼
-Master Secret
-    ├──► Client Application Traffic Key  ── encrypts client application data
-    ├──► Server Application Traffic Key  ── encrypts server application data
+Master Secret + transcript hash
+    ├──► "c ap traffic" ──► Client Application Traffic Key  ── encrypts client application data
+    ├──► "s ap traffic" ──► Server Application Traffic Key  ── encrypts server application data
     └──► Resumption Master Secret        ── used to create session tickets
 ```
 
@@ -102,7 +115,7 @@ Client                                              Server
   │──── ClientHello ──────────────────────────────────►│
   │     (random, supported ciphers, key_share)         │
   │                                                    │
-  │◄─── ServerHello ──────────────────────────────────│
+  │◄─── ServerHello ───────────────────────────────────│
   │     (random, chosen cipher, key_share)             │
   │                                                    │
   │     ┌─────── encrypted with handshake keys ───────┐│
