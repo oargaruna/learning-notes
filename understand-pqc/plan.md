@@ -1,0 +1,7 @@
+- understand what quantum cryptography means.
+- figure out what physics is required to understand the quantum crypto algos.
+- what are the foundational papers and research in this topic?
+    - BB84: why is the coin tossing example important? what cheating needs to be prevented?
+    - Shor: the attack vector
+- what's the state of the field today
+- where is the field heading in the coming years
