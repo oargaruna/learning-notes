@@ -1,0 +1,6 @@
+# Python virtualenv (project Jupyter kernel) — not committed
+.venv/
+
+# Jupyter / Python cruft
+.ipynb_checkpoints/
+__pycache__/
